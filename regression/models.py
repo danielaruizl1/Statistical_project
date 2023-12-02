@@ -10,18 +10,18 @@ from sklearn.feature_selection import RFE
 from sklearn.linear_model import LassoCV
 from sklearn.decomposition import PCA
 from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
-import xgboost as xgb
-import pandas as pd
-import numpy as np
-import argparse
-import os
-import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 from wandb.keras import WandbCallback
+import tensorflow as tf
+import xgboost as xgb
+import pandas as pd
+import numpy as np
+import argparse
 import wandb
 import random
+import os
 
 # Parsing the arguments
 str2bool = lambda x: (str(x).lower() == 'true')
@@ -131,7 +131,7 @@ if args.model == 'XgBoost':
         dtrain=dtrain_reg,
         num_boost_round=n,
     )
-
+    
     dtest_reg = xgb.DMatrix(X_test_selected)
     y_pred = model.predict(dtest_reg)
     y_pred_r = np.rint(y_pred)
