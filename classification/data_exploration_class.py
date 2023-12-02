@@ -52,3 +52,22 @@ df_train[df_train.columns] = scaler.fit_transform(df_train)
 df_train_X = df_train.drop(['FRACASO'], axis = 1) 
 df_train_y = df_train['FRACASO']
 
+
+#%% Feature selection
+from sklearn.feature_selection import RFE
+from sklearn.linear_model import LogisticRegression
+
+model = LogisticRegression(solver='lbfgs')
+rfe = RFE(estimator=model, n_features_to_select=3)
+fit = rfe.fit(df_train_X, df_train_y)
+print("Num Features: %d" % fit.n_features_)
+print("Selected Features: %s" % fit.support_)
+print("Feature Ranking: %s" % fit.ranking_)
+
+#%% Feature Importance with Extra Trees Classifier
+from pandas import read_csv
+from sklearn.ensemble import ExtraTreesClassifier
+
+model = ExtraTreesClassifier(n_estimators=50)
+model.fit(df_train_X, df_train_y)
+print(model.feature_importances_)
