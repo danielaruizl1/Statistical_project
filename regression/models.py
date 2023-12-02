@@ -9,14 +9,19 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LassoCV
 from sklearn.decomposition import PCA
-from scikeras.wrappers import KerasRegressor
-from keras.models import Sequential
-from keras.layers import Dense
+from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import xgboost as xgb
 import pandas as pd
 import numpy as np
 import argparse
 import os
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
+from wandb.keras import WandbCallback
+import wandb
+import random
 
 # Parsing the arguments
 str2bool = lambda x: (str(x).lower() == 'true')
@@ -26,6 +31,19 @@ parser.add_argument('--FS_method', type=str, default='SelectFromModel', help='Fe
 parser.add_argument('--PCA', type=str, default=False, help='Use PCA')
 parser.add_argument('--model', type=str, default='XgBoost', help='Model to use')
 args = parser.parse_args()
+args_dict = vars(args)
+
+# Inicialize wandb
+wandb.init(
+    project='Statistical_project',
+    config=args_dict,
+)
+
+seed_value = 42
+os.environ['PYTHONHASHSEED'] = str(seed_value)
+random.seed(seed_value)
+np.random.seed(seed_value)
+tf.random.set_seed(seed_value)
 
 if args.prueba:
     data = pd.read_csv(os.path.join('data','trainReg.txt'))
@@ -129,16 +147,18 @@ elif args.model == 'GradientBoostingRegressor':
 elif args.model == 'NN':
 
     def baseline_model():
-        # create model
         model = Sequential()
-        model.add(Dense(60, input_dim=X_train_selected.shape[1], kernel_initializer='normal', activation='relu'))
+        model.add(Dense(64, input_dim=X_train_selected.shape[1], kernel_initializer='normal', activation='relu'))
+        model.add(Dropout(0.05))
+        model.add(Dense(16, kernel_initializer='normal', activation='relu'))
         model.add(Dense(1, kernel_initializer='normal'))
-        model.compile(loss='mean_absolute_error', optimizer='adam')
+        optimizer = tf.keras.optimizers.Adam(0.01)
+        model.compile(loss='mean_squared_error', optimizer=optimizer)
         return model
 
-    # evaluate model
-    estimator = KerasRegressor(model=baseline_model, epochs=10, batch_size=5, verbose=0, random_state=42, loss='mean_absolute_error')
-    estimator.fit(X_train_selected, df_train_y)
+    # evaluate model    
+    estimator = KerasRegressor(build_fn=lambda: baseline_model(), verbose=0)
+    estimator.fit(X_train_selected, df_train_y,epochs=30, batch_size=32, callbacks=[WandbCallback()])
     y_pred = estimator.predict(X_test_selected)
     y_pred_r = np.rint(y_pred)
     y_pred_r = y_pred_r.astype(int)
@@ -150,7 +170,9 @@ if args.prueba:
 else:
     # Save the results 
     results = pd.DataFrame({'Id':df_test['Id'],'y': y_pred_r})
-    results.to_csv(f"results_{args.FS_method}.csv",index=False)
+    results.to_csv(f"results_{args.model}.csv",index=False)
+
+wandb.finish()
 
 
 
