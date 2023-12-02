@@ -1,6 +1,5 @@
 # Importing the libraries
 from sklearn.feature_selection import SelectKBest, f_regression
-from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.feature_selection import SelectFromModel
@@ -10,9 +9,10 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LassoCV
 from sklearn.decomposition import PCA
+from scikeras.wrappers import KerasRegressor
 from keras.models import Sequential
 from keras.layers import Dense
-#import xgboost as xgb
+import xgboost as xgb
 import pandas as pd
 import numpy as np
 import argparse
@@ -137,7 +137,7 @@ elif args.model == 'NN':
         return model
 
     # evaluate model
-    estimator = KerasRegressor(build_fn=baseline_model, epochs=100, batch_size=5, verbose=0)
+    estimator = KerasRegressor(model=baseline_model, epochs=10, batch_size=5, verbose=0, random_state=42, loss='mean_absolute_error')
     estimator.fit(X_train_selected, df_train_y)
     y_pred = estimator.predict(X_test_selected)
     y_pred_r = np.rint(y_pred)
